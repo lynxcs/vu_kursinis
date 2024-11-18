@@ -1,7 +1,7 @@
 NAME:=kursinis
 TEX_NAME:=$(NAME).tex
 PDF_NAME:=$(NAME).pdf
-LATEXMK_BASE_FLAGS:=-lualatex -file-line-error -Werror -emulate-aux-dir -aux-directory=out
+LATEXMK_BASE_FLAGS:=-lualatex -file-line-error -Werror -emulate-aux-dir -aux-directory=out -shell-escape
 
 .PHONY: pdf
 pdf:

@@ -17,18 +17,19 @@
 \usepackage{listings}
 \usepackage{subcaption}
 \usepackage{biblatex}
+\usepackage{minted}
 
 % Titulinio aprašas
 \university{Vilniaus universitetas}
 \faculty{Matematikos ir informatikos fakultetas}
 \department{Programų sistemų studijų programa}
 \papertype{Kursinis darbas}
-\title{Programų sistemų kūrimo metodų tyrimas}
-\titleineng{Investigation of Methods of Software Development}
+\title{Duomenų Struktūros ir Algoritmai Moderniame C++}
+\titleineng{Modern C++ for Data Structures and Algorithms}
 \author{Domas Kalinauskas}
 \status{4 kurso I grupės studentas}
 % \secondauthor{Vardonis Pavardonis}   % Pridėti antrą autorių
-\supervisor{prof. habil. dr. Vardaitis Pavardaitis}
+\supervisor{Viktoras Golubevas}
 \reviewer{doc. dr. Vardauskas Pavardauskas}
 \date{Vilnius – \the\year}
 
@@ -39,9 +40,71 @@
 
 \tableofcontents
 
-\sectionnonum{Įvadas}
+\sectionnonum{Įvadas/Intro?}
+
+\subsection{Tikslas/Aim}
+
+The aim of this <Kursinis darbas> is to analyze how modern C++ improves on
+the usability of DSA's (data structures and algorithms) and their performance, in comparison to older versions
+of the C++ standard, and how it stacks up with other languages.
+
+\subsection{Uždaviniai/Objectives}
+
+1. 
+2.
+3.
+
+\subsection{Ivadas/Intro}
+
+Collectively, the world is moving towards safer and safer languages. This is seen via widespread adoption of memory-safe languages,
+such as Rust, or the overall popularity of 'managed', garbage-collected runtimes such as Java, .NET, Python etc.
+(The safety in 'managed' languages comes from the fact that a vulnerability in the runtime has a much smaller surface area - requiring only a fix in the runtime, instead of the code that is built on top of it)
+
+However, C++ has seen somewhat of a 'renessaince', with a similiar move to safer and more declarative APIs, along with a push towards 'functional' style concepts.
+
+This <Kursinis darbas> aims to be a comprehensive comparison-analysis of recently introduced modern C++ features, and how they stack up against similar features in other languages.
+We'll <galiu naudot?> take a look at the memory impact, performance impact, and implementation details of these features, along with where they might be ideally used.
+
 Įvade apibūdinamas darbo tikslas, temos aktualumas ir siekiami rezultatai.
 Darbo įvadas neturi būti dėstymo santrauka. Įvado apimtis 1–-2 puslapiai.
+
+\section{Modern C++ Features for Algorithmic Problem Solving}
+
+\subsection{Ranges}
+
+A common pattern in C++ code is applying an operation over a selection of elements. The most classic style, which is still in-use today is the index based loop:
+\inputminted[]{C++}{./source_code/ranges_loop_index.cpp}
+There are a few notable downsides to the index based for loop, namely that it's error-prone, and can only be effectively used with random-indexable types (e.g. std::array, std::vector).
+This means that if we want to iterate over a list, or another custom container, we'd have to change the for loop structure to be compatible.
+
+
+With the introduction of C++11, we got access to the range-based for loop:
+\inputminted[]{C++}{./source_code/ranges_loop_range.cpp}
+When using range-based for loops, we no longer have to manually write the iteration code, meaning it doesn't matter if the type is a array, vector, list, or any other custom iterator.
+Under the hood, these range-based for loops relies on the container having .begin()/.cbegin() and .end()/.cend() member functions.
+
+% However, we're still constrained to using a for loop, which is less than ideal, since we can't access precisely X elements without adding a manual counter \& break statement.
+
+\subsection{Concepts}
+\subsection{Functional}
+(Variants, Optional, Expected, Transform, t.t.)
+
+Compare with equivalent features in Rust (mixed-paradigm language) \& Haskell (functional language)
+
+\section{Modern C++ for High-Performance Computing}
+
+\subsection{Compile-time calculations}
+* Compare with other languages that can do that (Zig?)
+* Mention best compile-time LUT library \:\^)
+* Maybe something about compression at compile-time
+
+\subsection{Execution policies}
+* Reference TBB
+* Can be compared to Rust libraries with similiar thing (ehhh forgot but iterator)
+
+\subsection{Coroutines}
+* reference coroutine look-up? (https://www.youtube.com/watch?v=j9tlJAqMV7U)
+* compare to Rust async \& maybe js? async
 
 \section{Medžiagos darbo tema dėstymo skyriai}
 Medžiagos darbo tema dėstymo skyriuose pateikiamos nagrinėjamos temos detalės:
