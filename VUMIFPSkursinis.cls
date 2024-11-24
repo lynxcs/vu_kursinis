@@ -45,7 +45,7 @@
 
 \RequirePackage{setspace} % Intervalas tarp eilučių
 \RequirePackage[
-    left=3cm,
+    left=1.5cm,
     top=2cm,
     right=1.5cm,
     bottom=2cm,

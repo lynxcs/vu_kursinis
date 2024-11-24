@@ -19,6 +19,9 @@
 \usepackage{biblatex}
 \usepackage{minted}
 
+\newmintinline[cppinline]{C++}{}
+\newmintedfile[cppfile]{C++}{}
+
 % Titulinio aprašas
 \university{Vilniaus universitetas}
 \faculty{Matematikos ir informatikos fakultetas}
@@ -32,7 +35,6 @@
 \supervisor{Viktoras Golubevas}
 \reviewer{doc. dr. Vardauskas Pavardauskas}
 \date{Vilnius – \the\year}
-
 \bibliography{bibliografija}
 
 \begin{document}
@@ -61,7 +63,6 @@ such as Rust, or the overall popularity of 'managed', garbage-collected runtimes
 (The safety in 'managed' languages comes from the fact that a vulnerability in the runtime has a much smaller surface area - requiring only a fix in the runtime, instead of the code that is built on top of it)
 
 However, C++ has seen somewhat of a 'renessaince', with a similiar move to safer and more declarative APIs, along with a push towards 'functional' style concepts.
-
 This <Kursinis darbas> aims to be a comprehensive comparison-analysis of recently introduced modern C++ features, and how they stack up against similar features in other languages.
 We'll <galiu naudot?> take a look at the memory impact, performance impact, and implementation details of these features, along with where they might be ideally used.
 
@@ -73,17 +74,52 @@ Darbo įvadas neturi būti dėstymo santrauka. Įvado apimtis 1–-2 puslapiai.
 \subsection{Ranges}
 
 A common pattern in C++ code is applying an operation over a selection of elements. The most classic style, which is still in-use today is the index based loop:
-\inputminted[]{C++}{./source_code/ranges_loop_index.cpp}
+\cppfile{./source_code/ranges_loop_index.cpp}
 There are a few notable downsides to the index based for loop, namely that it's error-prone, and can only be effectively used with random-indexable types (e.g. std::array, std::vector).
 This means that if we want to iterate over a list, or another custom container, we'd have to change the for loop structure to be compatible.
 
-
-With the introduction of C++11, we got access to the range-based for loop:
-\inputminted[]{C++}{./source_code/ranges_loop_range.cpp}
+With the introduction of C++11, we got access to the range-based for loop (*for production you'd want to use a specific concept instead of auto - that way you would get a clearer error message):
+\cppfile{./source_code/ranges_loop_range.cpp}
 When using range-based for loops, we no longer have to manually write the iteration code, meaning it doesn't matter if the type is a array, vector, list, or any other custom iterator.
-Under the hood, these range-based for loops relies on the container having .begin()/.cbegin() and .end()/.cend() member functions.
+Under the hood, these range-based for loops relies on the container having .begin()/.cbegin() and .end()/.cend() member functions - they return corresponding iterators which allow access to values.
 
-% However, we're still constrained to using a for loop, which is less than ideal, since we can't access precisely X elements without adding a manual counter \& break statement.
+These iterators are what is passed along to the STL\* algorithms, however, they don't allow for full freedom - they become quite verbose when combining more complex operations.
+
+Take for example, we had a scenario where we're given a collection of numbers, we want to skip the first N values, filter out the even ones, then apply some operation on them, and finally print them out - all while quitting early, if we encounter some magic number.
+
+\cppfile{./source_code/ranges_for_loop_filter_range.cpp}
+
+This is quite verbose - We have to use std::next to ensure support for (most) iterator types, pass the begin and end manually, use std::find\_if (keeping in mind that false means to continue iterating - normally you'd expect the inverse). This isn't hard to understand, but it's certainly not clear, especially when someone might not know exactly what is going on.
+
+This becomes much simpler when we use ranges, introduced first in C++20. With ranges and views(*special type of range, where the operations are lazy), the same functionality can be implemented in a much simpler way:
+
+\cppfile{./source_code/ranges_for_loop_filter_view.cpp}
+
+However, C++ ranges suffer from some less than obvious safety issues and performance downsides (*reference talk about C++ ranges filter). One of which, being a very less than obvious footgun(! const propogation - filter re-use after modification)
+
+Let's take a look at what gets executed when we call that function, while printing when performing drop, filter, transform and take\_while.
+
+\cppfile{./source_code/ranges_for_loop_filter_view_perf_example.cpp}
+
+The output for execution looks like this:
+
+\cppfile{./source_code/ranges_for_loop_filter_view_perf_example.cpp.out}
+
+The unexpected part here is that we have to apply transformation twice for each value passing filter - once when evaluating whether value is taken, and then again when we dereference it.
+This is because, semantically, in the C++ iterator model, positioning (++) and accessing (*) are distinct operations. Under the hood, take must access (*) the value, then change positioning (++) of the iterator.
+After the value is taken, then our for\_each does the same thing - it dereferences whatever we get out, meaning that the transformation gets applied twice, since there's no way of 'reusing' the accessed value.
+
+This differs from, for example, the Rust iterator model, where essentially each stage of the pipeline passes values directly to the next. This becomes apparent when you want to implement your own Rust iterators vs C++ views. In the C++ case, the view takes some input view, and then must define both a begin() and an end() operation which return 'iterators', whereas with the Rust variant, only a next() function, returning an Optional<ValueT> is required.
+
+Here is that same example, written using Rust iterators, along with the produced output:
+
+\inputminted[]{Rust}{./source_code/ranges_for_loop_filter_view_perf_example.rs}
+
+\cppfile{./source_code/ranges_for_loop_filter_view_perf_example.rs.out}
+
+Duplicate work can be avoided in the C++ case, by using a view that caches the result of dereferencing an element, but the downside is that, depending on what it is you're caching, it can become quite expensive. Unfortunately, while such a view was present in ranges-v3(*link) which was used to form the basis of P0896R4(*link)(the proposal that got accepted into the C++20 standard), quite a few of the views in ranges-v3 were missing, views::cache1 being one of them.
+
+FIXME: Cia reiktu kokio normalus conclusion'o? Kazka daugmas kad C++20+ ranges padidinima kodo skaitomuma, bet performance-sensitive vietose geriau jo vengti.
 
 \subsection{Concepts}
 \subsection{Functional}
