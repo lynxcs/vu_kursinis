@@ -1,0 +1,14 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-O3",
+      "-Wall",
+      "-std=c++23",
+      "-c",
+      "benchmark.cpp"
+    ],
+    "directory": "/home/domaskal/development/vu_kursinis/tests/ranges_benchmark",
+    "file": "/home/domaskal/development/vu_kursinis/tests/ranges_benchmark/benchmark.cpp"
+  }
+]

@@ -11,29 +11,49 @@
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{bm}
-\usepackage{caption}
+\usepackage[compatibility=false]{caption}
 \usepackage{color}
 \usepackage{graphicx}
 \usepackage{listings}
 \usepackage{subcaption}
 \usepackage{biblatex}
 \usepackage{minted}
+\usepackage{cleveref}
+\usepackage[section]{placeins}
+\usepackage{titlesec}
+% \usepackage{pgf}
+% \usepackage{pgfplots}
+\usepackage{svg}
 
-\newmintinline[cppinline]{C++}{}
-\newmintedfile[cppfile]{C++}{}
+\newcommand{\sectionbreak}{\clearpage}
+
+\newcommand{\usection}[1]{\section*{#1}
+\addcontentsline{toc}{section}{\protect\numberline{}#1}}
+
+\newcommand{\usubsection}[1]{\subsection*{#1}
+\addcontentsline{toc}{subsection}{\protect\numberline{}#1}}
+
+\newcommand{\usubsubsection}[1]{\subsubsection*{#1}
+\addcontentsline{toc}{subsubsection}{\protect\numberline{}#1}}
+
+\newmintinline[cppinline]{C++}{fontsize=\small}
+\newmintedfile[cppfile]{C++}{fontsize=\small}
+\newmintinline[rsinline]{Rust}{fontsize=\small}
+\newmintedfile[rsfile]{Rust}{fontsize=\small}
+\newmintinline[pyinline]{Python}{fontsize=\small}
+\newmintedfile[pyfile]{Python}{fontsize=\small}
 
 % Titulinio aprašas
 \university{Vilniaus universitetas}
 \faculty{Matematikos ir informatikos fakultetas}
 \department{Programų sistemų studijų programa}
-\papertype{Kursinis darbas}
+\papertype{Course Project}
 \title{Duomenų Struktūros ir Algoritmai Moderniame C++}
 \titleineng{Modern C++ for Data Structures and Algorithms}
 \author{Domas Kalinauskas}
 \status{4 kurso I grupės studentas}
-% \secondauthor{Vardonis Pavardonis}   % Pridėti antrą autorių
 \supervisor{Viktoras Golubevas}
-\reviewer{doc. dr. Vardauskas Pavardauskas}
+\reviewer{}
 \date{Vilnius – \the\year}
 \bibliography{bibliografija}
 
@@ -42,169 +62,496 @@
 
 \tableofcontents
 
-\sectionnonum{Įvadas/Intro?}
+\sectionnonum{Introduction}
 
-\subsection{Tikslas/Aim}
+\usubsection{Intro}
 
-The aim of this <Kursinis darbas> is to analyze how modern C++ improves on
-the usability of DSA's (data structures and algorithms) and their performance, in comparison to older versions
-of the C++ standard, and how it stacks up with other languages.
+The programming landscape is rapidly evolving, with an increasing focus on creating safer software. Memory safety issues, often a source of critical vulnerabilities, have led to the widespread adoption of languages such as Rust, which enforces safety guarantees at compile time, and managed, garbage-collected runtimes like Java and .NET. C++ remains a cornerstone of systems programming, however, this comes with challenges - traditionally developers must navigate a steep learning curve and manually manage safety concerns such as resource allocation and deallocation, alongside avoiding and mitigating undefined behavior. To address these issues, modern iterations of C++ have introduced features aimed at improving safety, usability, and expressiveness, making the language more competitive and accessible.
 
-\subsection{Uždaviniai/Objectives}
+This course project aims to analyze these advancements in C++ to better understand their real-world impact on both safety and performance. Additionally, it is important to evaluate how these features compare to similar capabilities in other languages, in order to understand where C++ might fall behind and could improve in the future.
 
-1. 
-2.
-3.
+\usubsection{Objectives}
+\begin{enumerate}
+    \item Evaluate the usability and performance of ranges
+    \item Compare SFINAE with concepts
+    \item Analyze type-safe data structure additions in STL
+    \item Detail constant expression function capabilities
+    \item Introduce coroutines
+\end{enumerate}
 
-\subsection{Ivadas/Intro}
+%Įvade apibūdinamas darbo tikslas, temos aktualumas ir siekiami rezultatai.
+%Darbo įvadas neturi būti dėstymo santrauka. Įvado apimtis 1–-2 puslapiai.
 
-Collectively, the world is moving towards safer and safer languages. This is seen via widespread adoption of memory-safe languages,
-such as Rust, or the overall popularity of 'managed', garbage-collected runtimes such as Java, .NET, Python etc.
-(The safety in 'managed' languages comes from the fact that a vulnerability in the runtime has a much smaller surface area - requiring only a fix in the runtime, instead of the code that is built on top of it)
-
-However, C++ has seen somewhat of a 'renessaince', with a similiar move to safer and more declarative APIs, along with a push towards 'functional' style concepts.
-This <Kursinis darbas> aims to be a comprehensive comparison-analysis of recently introduced modern C++ features, and how they stack up against similar features in other languages.
-We'll <galiu naudot?> take a look at the memory impact, performance impact, and implementation details of these features, along with where they might be ideally used.
-
-Įvade apibūdinamas darbo tikslas, temos aktualumas ir siekiami rezultatai.
-Darbo įvadas neturi būti dėstymo santrauka. Įvado apimtis 1–-2 puslapiai.
-
+\FloatBarrier
 \section{Modern C++ Features for Algorithmic Problem Solving}
 
+\FloatBarrier
 \subsection{Ranges}
 
-A common pattern in C++ code is applying an operation over a selection of elements. The most classic style, which is still in-use today is the index based loop:
-\cppfile{./source_code/ranges_loop_index.cpp}
+\newcommand{\addfile}[3] {
+    \begin{figure}[!htbp]
+        \centering
+        #1
+    \caption{#2}
+    \label{fig:#3}
+    \end{figure}
+}
+
+\FloatBarrier
+\subsubsection{Index-based iteration}
+
+A common pattern in C++ code is applying an operation over a selection of elements. The most classic style, which is still in-use today is the index based loop seen in \cref{fig:index_loop}
+
+\addfile{\cppfile{./source_code/ranges_loop_index.cpp}}{index-based loop}{index_loop}
+
 There are a few notable downsides to the index based for loop, namely that it's error-prone, and can only be effectively used with random-indexable types (e.g. std::array, std::vector).
 This means that if we want to iterate over a list, or another custom container, we'd have to change the for loop structure to be compatible.
 
-With the introduction of C++11, we got access to the range-based for loop (*for production you'd want to use a specific concept instead of auto - that way you would get a clearer error message):
-\cppfile{./source_code/ranges_loop_range.cpp}
-When using range-based for loops, we no longer have to manually write the iteration code, meaning it doesn't matter if the type is a array, vector, list, or any other custom iterator.
+\FloatBarrier
+\subsubsection{Value-based iteration}
+
+With the introduction of C++11, we got access to the iterators and the range-based for loop\footnote{for production you'd want to use a specific concept instead of auto - that way you would get a clearer error message} seen in \cref{fig:range_loop}
+
+\addfile{\cppfile{./source_code/ranges_loop_range.cpp}}{range-based loop}{range_loop}
+
+When using iterators with range-based for loops, we no longer have to manually write the iteration code, meaning it doesn't matter if the type is a array, vector, list, or any other custom iterator.
 Under the hood, these range-based for loops relies on the container having .begin()/.cbegin() and .end()/.cend() member functions - they return corresponding iterators which allow access to values.
 
-These iterators are what is passed along to the STL\* algorithms, however, they don't allow for full freedom - they become quite verbose when combining more complex operations.
+These iterators form the basis of the standard library algorithms and ranges. They can be thought of as the "glue" between data structures and algorithms. Iterators provide a generic way to navigate through the elements in a sequence. This approach allows separating the algorithm from the container and their internal data layouts, thus making code more flexible \cite{HPCPP}. However, iterators can become quite hard to follow or reason about when combining some of the more complex standard library operations.
 
-Take for example, we had a scenario where we're given a collection of numbers, we want to skip the first N values, filter out the even ones, then apply some operation on them, and finally print them out - all while quitting early, if we encounter some magic number.
+\FloatBarrier
+\subsubsection{Ranges improvement over iterators}
 
-\cppfile{./source_code/ranges_for_loop_filter_range.cpp}
+Take for example, we had a scenario where we're given a collection of numbers, we want to skip the first N values, filter out the even ones, then apply some operation on them, and finally print them out - all while quitting early, if we encounter some magic number. The range-based filter loop approach can be seen in \cref{fig:range_filter_loop}
 
-This is quite verbose - We have to use std::next to ensure support for (most) iterator types, pass the begin and end manually, use std::find\_if (keeping in mind that false means to continue iterating - normally you'd expect the inverse). This isn't hard to understand, but it's certainly not clear, especially when someone might not know exactly what is going on.
+\addfile{\cppfile{./source_code/ranges_for_loop_filter_range.cpp}}{range-based filter loop}{range_filter_loop}
 
-This becomes much simpler when we use ranges, introduced first in C++20. With ranges and views(*special type of range, where the operations are lazy), the same functionality can be implemented in a much simpler way:
+This approach is quite verbose - We have to use std::next to ensure support for (most) iterator types, pass the begin and end manually, use std::find\_if (keeping in mind that false means to continue iterating - normally you'd expect the inverse). While it isn't impossible to understand, but it's certainly not clear at a glance what the code is doing (or why it's doing it), especially when someone might not know exactly what is going on.
 
-\cppfile{./source_code/ranges_for_loop_filter_view.cpp}
+This becomes much simpler when we use ranges, introduced first in C++20. With ranges and views\footnote{special type of range, where the operations are lazy}, the same functionality can be implemented in a much simpler way, as seen in \cref{fig:view_filter}
 
-However, C++ ranges suffer from some less than obvious safety issues and performance downsides (*reference talk about C++ ranges filter). One of which, being a very less than obvious footgun(! const propogation - filter re-use after modification)
+\addfile{\cppfile{./source_code/ranges_for_loop_filter_view.cpp}}{ranges filter view}{view_filter}
 
-Let's take a look at what gets executed when we call that function, while printing when performing drop, filter, transform and take\_while.
+\FloatBarrier
+\subsubsection{Ranges pitfalls}
 
-\cppfile{./source_code/ranges_for_loop_filter_view_perf_example.cpp}
+However, C++ ranges, and in particular, lazy views, suffer from some less than obvious safety issues and performance downsides. Such as the filter view being incompatible with modifications that change values in a way that a previously matching entry leads to it no longer satisfying the filter. Doing such an action is considered undefined behaviour by the standard, which means that the pattern of using a filter to \textit{fix} some attribute of elements cannot safely be done \cite{C++Views}.
 
-The output for execution looks like this:
+Going back to our view filter example, after modifying it to print what action is being executed, the result with some sample data can be seen in \cref{fig:cpp_iter}.
 
-\cppfile{./source_code/ranges_for_loop_filter_view_perf_example.cpp.out}
+\begin{figure}[!htbp]
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \cppfile{./source_code/ranges_for_loop_filter_view_perf_example.cpp}
+    \end{minipage}
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \cppfile{./source_code/ranges_for_loop_filter_view_perf_example.cpp.out}
+    \end{minipage}
+    \caption{C++ range code and output}
+    \label{fig:cpp_iter}
+\end{figure}
 
 The unexpected part here is that we have to apply transformation twice for each value passing filter - once when evaluating whether value is taken, and then again when we dereference it.
 This is because, semantically, in the C++ iterator model, positioning (++) and accessing (*) are distinct operations. Under the hood, take must access (*) the value, then change positioning (++) of the iterator.
 After the value is taken, then our for\_each does the same thing - it dereferences whatever we get out, meaning that the transformation gets applied twice, since there's no way of 'reusing' the accessed value.
 
+\FloatBarrier
+\subsubsection{Comparison with Rust iterators}
+
 This differs from, for example, the Rust iterator model, where essentially each stage of the pipeline passes values directly to the next. This becomes apparent when you want to implement your own Rust iterators vs C++ views. In the C++ case, the view takes some input view, and then must define both a begin() and an end() operation which return 'iterators', whereas with the Rust variant, only a next() function, returning an Optional<ValueT> is required.
 
-Here is that same example, written using Rust iterators, along with the produced output:
+That same example given in \cref{fig:cpp_iter} but written using Rust iterators, along with the produced output can be seen in \cref{fig:rust_iter}
 
-\inputminted[]{Rust}{./source_code/ranges_for_loop_filter_view_perf_example.rs}
+\begin{figure}[!htbp]
+    \begin{minipage}{0.55\textwidth}
+        \centering
+        \rsfile{./source_code/ranges_for_loop_filter_view_perf_example.rs}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \cppfile{./source_code/ranges_for_loop_filter_view_perf_example.rs.out}
+    \end{minipage}
+    \caption{Rust iterator code and output}
+    \label{fig:rust_iter}
+\end{figure}
 
-\cppfile{./source_code/ranges_for_loop_filter_view_perf_example.rs.out}
+\FloatBarrier
+\subsubsection{Avoiding duplicate work}
 
-Duplicate work can be avoided in the C++ case, by using a view that caches the result of dereferencing an element, but the downside is that, depending on what it is you're caching, it can become quite expensive. Unfortunately, while such a view was present in ranges-v3(*link) which was used to form the basis of P0896R4(*link)(the proposal that got accepted into the C++20 standard), quite a few of the views in ranges-v3 were missing, views::cache1 being one of them.
+Duplicate work can be avoided in the C++ case, by using a view that caches the result of dereferencing an element, but the downside is that, depending on what it is you're caching, it can become quite expensive. Unfortunately, while such a view was present in ranges-v3 \footnote{code basis of Ranges-TS proposal} - P0896R4\footnote{\url{https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0896r4.pdf}}, the proposal that got accepted into the C++20 standard, had quite a few of the views in ranges-v3 missing, views::cache1 being one of them.
 
-FIXME: Cia reiktu kokio normalus conclusion'o? Kazka daugmas kad C++20+ ranges padidinima kodo skaitomuma, bet performance-sensitive vietose geriau jo vengti.
+\FloatBarrier
+\subsubsection{Ranges benchmark}
 
+To verify whether there are any glaring performance differences these approaches, a micro-benchmark was performed\footnote{note - performance can vary depending on compiler and compiler version, for details see appendix}. The benchmark consisted of four test cases:
+\begin{itemize}
+    \item regular for loop
+    \item find\_if
+    \item view
+    \item view, but using anonymous lambdas
+\end{itemize}
+
+The results of this benchmark can be seen in \cref{fig:ranges_perf}. The two interesting parts are that find\_if \textbf{outperforms} the regular loop approach, and that the view with lambdas is more performant than the view without. After performing an analysis on the generated assembly, the author concludes that on the tested compiler, find\_if was auto-vectorized to perform 8 operations per each loop, meaning that N + K 'iterations' were performed, instead of 8 x N + K if there was no vectorization. Why find\_if was vectorized whereas the raw loop wasn't - the author wasn't able to determine for sure, however it could be due to the starting offset from the for loop preventing that optimization.
+The other interesting part - view with lambdas outperforming the view without is equally as puzzling. Checking the assembly, when range functions were provided plain anonymous lambdas that take the input and pass it straight to the wanted function, gcc decides to inline the wanted function body inside the anonymous lambda (and then inline the lambda within the corresponding range code), whereas when passed straight function pointers, gcc opted to call the function within the range code instead - without performing inlining. The author also double-checked generated assembly with gcc trunk and clang trunk. Clang trunk recognizes and inlines the function, whereas gcc trunk does the same as the gcc used to perform the benchmark.
+
+\begin{figure}[!htbp]
+    \begin{center}
+        \scalebox{.9}{
+            \includesvg{tests/ranges_benchmark/ranges_performance.svg}
+        }
+    \end{center}
+    \caption{Ranges performance comparison}
+    \label{fig:ranges_perf}
+\end{figure}
+
+\FloatBarrier
+\subsubsection{Ranges Summary}
+
+In the authors opinion, ranges increase code readability with minimal performance downside and should be preferred, except in areas
+that show poor performance and where that extra performance boost is needed (verified with a benchmark and/or profiling).
+
+\FloatBarrier
 \subsection{Concepts}
-\subsection{Functional}
-(Variants, Optional, Expected, Transform, t.t.)
 
-Compare with equivalent features in Rust (mixed-paradigm language) \& Haskell (functional language)
+\FloatBarrier
+\subsubsection{SFINAE introduction}
+When writing generic code, it's good practice to specify the requirements that the algorithm or function has.
 
+Previously, the best way of doing that, would be to have a static\_assert inside the implementation when using a function, in combination with SFINAE\footnote{SFINAE - Substitution failure is not an error} structs to check for the appropriate member functions, as seen in \cref{fig:sfinae_check}
+
+\addfile{\cppfile{./source_code/concepts_sfinae_example.cpp}}{SFINAE struct - area member function}{sfinae_check}
+
+However, there are a few problems with this approach. SFINAE checks are quite hard to understand and write, if you haven't used them before. Alongside that, the requirement itself is not mentioned anywhere
+in the function signature - so the only way to know is either by reading a comment (if there is one), inspecting the source code, or trying to compile and seeing what specifically fails.
+When compiling an example that doesn't pass the static assert, you'll get not only the failed static\_assert message, but also all areas that don't conform to that requirement. In this example where we only use
+area(), it might help pinpoint what's exactly wrong - but when more complex type requirements are in play, the multiple error messages hurt more than they help.
+
+\FloatBarrier
+\subsubsection{Concepts advantages}
+
+C++20 concepts improve on this, by removing the need to write SFINAE structs while also allowing us to specify the concept that our type must match inside the function signature, as seen in \cref{fig:concepts_check}. The result is that error messages become much more clear, and the requirements of a function are visible from it's declaration. Essentially, concepts allow developers to define a set of predicates that a type must satisfy, offering a more structure and readable way to constrain templates, as opposed to the SFINAE approach \cite{DSACPP}.
+
+\addfile{\cppfile{./source_code/concepts_concept_example.cpp}}{Concept - area member function}{concepts_check}
+
+\FloatBarrier
+\subsubsection{Constructor and Destructor requirements}
+
+Concepts allow specifying requirements for constructors and destructors. One example use case would be with trivial destructors and an optional type. Plainly, a trivial destructor is one that \textit{doesn't} have to be executed. Types which don't have a user-defined destructor and all of their member variables are trivially destructable - are also considered
+trivially destructable. For an optional this attribute of a provided type could be used to omit a check of existence and a call to the empty destructor. To ensure that optionals with
+trivially destructable members are also trivially destructable, we have to have two destructors - one that checks existence + calls destructor, and one that does nothing (= default).
+Before concepts, such an implementation would require a dispatch to one of two base classes - which both have a common base class that implements the functionality. After
+the appearance of concepts, a much simpler approach can be taken, as seen from the side-by-side in \cref{fig:optional_impl}
+
+\begin{figure}[!htbp]
+    \begin{minipage}{0.55\textwidth}
+        \centering
+        \cppfile{./source_code/concepts_optional_noconcept.cpp}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \cppfile{./source_code/concepts_optional_concept.cpp}
+    \end{minipage}
+    \caption{Optional SFINAE vs concepts}
+    \label{fig:optional_impl}
+\end{figure}
+
+\FloatBarrier
+\subsubsection{Concept compilation speed benchmark}
+
+Furthermore, concepts can improve compile times, since for SFINAE the compiler must instanciate all variants before picking one\footnote{the most 'specific' one is preferred} from the list of available variants\footnote{if >1 applicable variant of identical specificity, compile-erorr about ambigiuty is emitted instead.}, whereas concepts allow short-circuiting, meaning that as soon as one part of concept doesn't match - evaluation is finished. To confirm that this is indeed the case, a compile-time test was performed. A recursive base class with templated value N was created, which contains itself with N-1 as it's base class all the way to zero. Then, a function specialization for each specialization of that base class from N to zero was added. This essentially tests how fast the compiler can instantiate and pick the correct overload, leveraging SFINAE template with std::enable\_if\_t from STL, and the same equivalent functionality with the concept keyword \textit{requires}. For the SFINAE implementation, the compiler must instantiate and parse all implementations even if the passed recursive base class doesn't match or won't be able to match the overload set. This is confirmed by the performance graph in \cref{fig:concept_performance}. It shows that concepts are slightly faster to compile than their equivalent SFINAE-based implementations, since they don't have to instantiate all function specializations and base classes.
+
+\begin{figure}[!htbp]
+    \begin{center}
+        \scalebox{.9}{
+            \includesvg{tests/concept_performance.svg}
+        }
+    \end{center}
+    \caption{Concept vs SFINAE compilation time}
+    \label{fig:concept_performance}
+\end{figure}
+
+\FloatBarrier
+\subsubsection{Comparison with Rust traits}
+
+For comparison in Rust, traits are used both for monomorphised functions (templates / concepts), but also
+for dynamic dispatch (interfaces / virtual functions). While C++ concepts apply to any type which
+satisfies it's constraint, Rust traits only apply when \textit{explicitly} implementing that trait for a type.
+This prevents cases where an identical but semantically different function matches\footnote{e.g. draw() - could apply to drawing on a canvas, or drawing a card}. The same example but implemented via Rust traits can be seen in \cref{fig:rust_traits}
+
+\addfile{\rsfile{./source_code/concepts_trait_example.rs}}{Rust trait - area function}{rust_traits}
+
+\FloatBarrier
+\subsection{Type-Safe Data Structures}
+
+Recent releases of the STL and C++ standard have contained more type-safe additions, which simplify
+the way of \textit{correctly} handling combination types, such as unions or optional values. They
+also provide a way of handling, storing and dispatching against all possible types for a function without having to resort to
+virtual functions or memory allocations.
+
+\FloatBarrier
+\subsubsection{Type-safe Union}
+
+The older approach to having N variants in a single-type in C and C++ was having a union, however with the appearance of constructors/destructors, when combining them with unions manually,
+it is very trivial to introduce an invalid memory access or something similiar. This approach requires a bit of boilerplate - adding an enum indicating which value it has, then manually handling the constructor and destructor logic to ensure that the correct object gets initialized/deinitialized, as seen in \cref{fig:cpp_union}
+
+\addfile{\cppfile{./source_code/functional_union.cpp}}{C++ union}{cpp_union}
+
+To handle this, a type-safe union was introduced in C++17 - std::variant. It is essentially a "smart union" in that in addition to storing a value of one of the specified types at a time, the variant knowns which type it contains, while with a union, the programmer is responsible for reading the same type as was written. The variant also handles calling the destructor that corresponds to the currently stored type when the object goes out of scope, or when switching the contained type. Accessing the wrong type throws an exception, though a non-throwing variation is possible by checking whether the contained type matches the expected one before accessing \cite{HandsOnCPP}.
+When comparing it to Rust - it lags behind the Rust languages equivalent, since we can't indicate the slot without creating a separate enum, meaning that access is done
+either via concrete index (0, 1, etc.), or, if there is only a single instance of concrete type, then via type (uint32\_t, std::string, etc.). Furthermore, the logic required to match is much cleaner in Rust, with the C++ style std::visit being much more complex. An example of variant and visiting can be seen in \cref{fig:cpp_variant}
+
+\addfile{\cppfile{./source_code/functional_variant.cpp}}{C++ variant}{cpp_variant}
+
+Rust enums are unique in that they provide the ability to have different data types for each of the enum variants, which can then safely be dispatched, as can be seen in \cref{fig:rust_enum}
+
+\addfile{\rsfile{./source_code/functional_rs_enum.rs}}{Rust enum}{rust_enum}
+
+\FloatBarrier
+\subsubsection{Optional value}
+
+Another quite common pattern encountered is the ability to indicate the absence of a value.
+
+In Rust, this is achieved via Option<T>, which is an enum variant with 2 possible values - None, and Some(T) (where T is the type of the optional). Due to this, the Rust optional can re-use alot of the matching syntax that rust makes available. C++ also has a similiar feature available in the standard library - std::optional<T>. An example of both can be seen in \cref{fig:optional_comparison}
+
+\begin{figure}[!htbp]
+    \begin{minipage}{0.55\textwidth}
+        \centering
+        \cppfile{./source_code/functional_optional_calc.cpp}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \rsfile{./source_code/functional_optional_calc.rs}
+    \end{minipage}
+    \caption{C++ and Rust optional comparison}
+    \label{fig:optional_comparison}
+\end{figure}
+
+\FloatBarrier
+\subsubsection{Result value}
+
+Sometimes functions need to return either a success or failure value, which are of different types. For example, either a calculated value or a string error message. In C++ this is handled with a std::expected<T, F>, where T is the success type, and F is the failure type. The equivalent in Rust, is Result<T, F>. This, just like Option, relies on enum variants, which allows it to re-use the matching logic. Example of C++ and Rust seen in \cref{fig:expected_comparison}
+
+\begin{figure}[!htbp]
+    \begin{minipage}{0.55\textwidth}
+        \centering
+        \cppfile{./source_code/functional_result_calc.cpp}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \rsfile{./source_code/functional_result_calc.rs}
+    \end{minipage}
+    \caption{C++ and Rust std::expected/Result comparison}
+    \label{fig:expected_comparison}
+\end{figure}
+
+Essentially, the Rust takes one feature (enum variants), and then applies it to their 'functional' types. This means that optimizing one part, e.g. enum variant matching, will materialize as a gain in both Optional and Expected. This is in contrast to C++, where std::variant, std::optional and std::expected are all distinct types with their own implementation details.
+
+\FloatBarrier
+\subsubsection{Discriminant size optimization}
+
+When using Rust, the compiler can optimize the enum instances' discriminant\footnote{element that indicates which variant is being held} to use invalid byte patterns instead of a separate field \cite{RustReference}. This can lead to significant final type size savings, esp. when even a 1-byte discriminant would require aligning to the requirements of the biggest type. So e.g. for a type with 8 byte alignment, if no invalid discriminant patterns exist, the final size would be 16 bytes.
+
+A concrete example of this in use, is with std::optional<bool> - this takes up 2 bytes, whereas in Rust, Option<bool>, would only take up 1 byte of space, since the unused bits of the bool value can be used to store the discriminant information. Assertions that this is the case can be seen in \cref{fig:optional_bool_size}
+
+\begin{figure}[!htbp]
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \cppfile{./source_code/functional_optional_bool_size.cpp}
+    \end{minipage}
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \rsfile{./source_code/functional_optional_bool_size.rs}
+    \end{minipage}
+    \caption{C++ and Rust optional bool size}
+    \label{fig:optional_bool_size}
+\end{figure}
+
+In the absence of specializations for C++, there are third-party solutions\footnote{size-optimized std::optional - \url{https://github.com/Sedeniono/tiny-optional}} for C++ that take advantage of these unused bits, however, having something that's built into the language would be much more convenient.
+
+\FloatBarrier
 \section{Modern C++ for High-Performance Computing}
 
+\FloatBarrier
 \subsection{Compile-time calculations}
-* Compare with other languages that can do that (Zig?)
-* Mention best compile-time LUT library \:\^)
-* Maybe something about compression at compile-time
 
-\subsection{Execution policies}
-* Reference TBB
-* Can be compared to Rust libraries with similiar thing (ehhh forgot but iterator)
+\FloatBarrier
+\subsubsection{Intro to constexpr}
+C++ has the ability to move calculations to build-time - most commonly used with constexpr, consteval, constinit keywords.
 
+In certain scenarios, constexpr calculations can provide a performance boost by moving work from runtime execution into
+compile-time. It's important to note, that \textit{constexpr doesn't guarantee compile-time execution}, only allows it. This is
+in contrast to the consteval specifier - this forces compile-time evaluation - meaning that they can't
+even be used in a runtime context. Similarly, constinit cannot be used in a run-time context since it
+is used to guarantee that a variable is initilized at compile-time.
+
+\FloatBarrier
+\subsubsection{Avoiding Static Initialization Order Fiasco}
+
+Constinit is used to solve a problem that appears when dealing with multiple global static variables - the "Static Initialization Order Fiasco". If two static objects, x and y exist in separate translation units, and y
+depends on the initialization of x, there are no guarantees that when y constructor is called, that x will have
+been already constructed. A common workaround is to use the "Construct On First Use" idiom - the idiom describes a function that returns a reference (or pointer) to a locally contained static variable - this way the initialization of that static is performed only when that function is called. However, the easiest way to ensure that this can't happen is to guarantee constant time initialization - by having the constinit specifier on any static variables.
+
+\FloatBarrier
+\subsubsection{Constexpr use-cases in practice}
+
+There are many potential use cases, for example:
+\begin{itemize}
+    \item Offloading math calculations.
+    \item Pre-compiling Regex expressions\footnote{\url{https://github.com/cmargiotta/e-regex}}.
+    \item When all keys (or even values) of a map / dictionary are known at compile time, then we can generate optimal hashes / layouts, as well as removing the need for dynamic allocation. Avoiding allocations were possible is useful in both HPC contexts, but also in the authors field of work - embedded devices\footnote{\url{https://github.com/lynxcs/heurohash}}.
+    \item Embedding data inside executable, while also compressing it \footnote{\url{https://github.com/AshleyRoll/squeeze}}
+\end{itemize}
+
+As newer versions of the C++ standard were released - various improvements and requirement relaxations for constexpr calculations were introduced, ranging from
+allowing dynamic allocations in constexpr (provided they don't outlive the constexpr context),
+to adding constexpr compatibility to large swaths of the standard library.
+
+\FloatBarrier
+\subsubsection{Constexpr limitations}
+
+There's a small downside to constexpr though - all the information must be visible to the compiler in the same
+translation unit, meaning that constexpr functions must be either header-only, or that the constant folding can only be performed inside of the translation unit that contains that constexpr function. Hiding dependencies or implementation details
+becomes functionally impossible in the header-only case. Also, for every translation unit that uses constexpr data the instantiation must be done
+separately, meaning that expensive to calculate constexpr functions which are included in many source files can significantly slow down compile-times.
+
+The multi-calculation issue is partly solved by C++ modules, however as of writing, first-class support for modules
+is still quite lacking in all 3 major compilers (gcc, clang, MSVC).
+
+\subsubsection{Comparison with Rust equivalent}
+
+Rust has 2 features which compete with constexpr:
+\begin{itemize}
+    \item const functions
+    \item procedural macros
+\end{itemize}
+
+Const functions in Rust are much more limited than their C++ equivalent - they can't allocate and Traits can't have them. For simple jobs, such as having some data type layout defined as a constant, or performing trivial operations, Rust
+const functions are suitable. An example of a constexpr C++ function and it's const fn Rust equivalent can be seen in \cref{fig:constexpr_function}
+
+\begin{figure}[!htbp]
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \cppfile{./source_code/constexpr_simple.cpp}
+    \end{minipage}
+    \begin{minipage}{0.5\textwidth}
+        \centering
+        \rsfile{./source_code/constexpr_simple.rs}
+    \end{minipage}
+    \caption{C++ and Rust constant functions}
+    \label{fig:constexpr_function}
+\end{figure}
+
+Procedural macros on the other hand are much more powerful, since they are evaluated during AST construction - before IR generation.
+Essentially, they allow running code at compile time that can transform the AST - they have access to the same resources that
+the compiler has. They can read and execute arbitrary code, which is a step above of what's currently possible in C++.
+
+One commonly used Rust feature, is \#[derive(...)]. This feature leverages macros to automatically generate code,
+for example, to print the contents of the struct, or provide copy, clone, etc. functionality.
+
+However, procedural macros come with a downside in that \textbf{creating} simple functions with them is much more complex than in their constexpr C++ counterpart.
+
+In the near future C++26 \textit{should} receive very similiar functionality (though not quite reaching what's possible with Rust macros) in the form of reflection.
+The key proposal in this area is P2996 which "is a proposal for a reduced initial set of features to support static reflection in C++" \cite{P2996} alongside a few follow-up / modification proposals, such as P3294 which suggests modifying P2996 "to add code injection in the form of token sequences" \cite{P3294}.
+
+% \FloatBarrier
+% \subsection{Execution policies}
+% * Reference TBB
+% * Can be compared to Rust libraries with similiar thing (rayon)
+
+\FloatBarrier
 \subsection{Coroutines}
-* reference coroutine look-up? (https://www.youtube.com/watch?v=j9tlJAqMV7U)
-* compare to Rust async \& maybe js? async
 
-\section{Medžiagos darbo tema dėstymo skyriai}
-Medžiagos darbo tema dėstymo skyriuose pateikiamos nagrinėjamos temos detalės:
-pradinė medžiaga, jos analizės ir apdorojimo metodai, sprendimų įgyvendinimas,
-gautų rezultatų apibendrinimas. Šios dalies turinys labai priklauso nuo darbo
-temos. Skyriai gali turėti poskyrius ir smulkesnes sudėtines dalis, kaip
-punktus ir papunkčius.
+\FloatBarrier
+\subsubsection{Coroutine theory}
 
-Medžiaga turi būti dėstoma aiškiai, pateikiant argumentus. Tekste dėstomas
-trečiuoju asmeniu, t.y. rašoma ne \enquote{aš manau}, bet „autorius mano“, „autoriaus
-nuomone“. Reikėtų vengti informacijos nesuteikiančių frazių, pvz., „...kaip jau
-buvo minėta...“, \enquote{...kaip visiems žinoma...} ir pan., vengti grožinės
-literatūros ar publicistinio stiliaus, gausių metaforų ar panašių meninės
-išraiškos priemonių.
+Starting with C++20, the language has access to coroutines. Coroutines are a generalisation of a 
+function that allows the function to be suspended and then later resumed. A typical function usually has
+2 operations - call and return. Coroutines expand that with 3 additional parts - suspend, resume, destroy.
+Suspending allows the coroutine to transfer execution back to the caller / resumer of the coroutine. Resuming
+continues execution of a previously suspended coroutine. Destroy cleans up all values that were currently in scope \cite{CoroutineTheory}.
+From an implementation point of view, coroutines can be either stackful or stackless. Stack in this case
+refers to where the coroutine frame is stored. In a stackful coroutine, the frame data is stored
+on the stack, whereas stackless stores the coroutine data separately from the callers stack.
+C++ coroutines adopt the stackless approach.
 
-Skyriai gali turėti poskyrius ir smulkesnes sudėtines dalis, kaip punktus ir
-papunkčius.
+\FloatBarrier
+\subsubsection{Coroutine frame allocation}
 
-\subsection{Poskyris}
-Citavimo pavyzdžiai: cituojamas vienas šaltinis \cite{PvzStraipsnLt}; cituojami
-keli šaltiniai \cite{PvzStraipsnEn, PvzStraipsnLta, PvzKonfLt, PvzKonfEn, PvzKnygLt, PvzKnygEn,
-PvzElPubLt, PvzElPubEn, PvzBakLt, PvzMagistrLt, PvzPhdEn}.
+It's worth noting, that one of the main parts of coroutines, the coroutine frame, is typically allocated on the heap. The standard does 
+allow for compilers to implement a HALO (Heap allocation ellision optimization) under some conditions, however, there is no way to guarantee it \cite{CoroHALO}.
+This means that coroutines cannot or should not be used in some contexts, such as safety critical applications or those that require
+deterministic execution times.
 
-Anglų kalbos terminų pateikimo pavyzdžiai: priklausomybių injekcija (\anglnb{dependency injection},
-dažnai trumpinama kaip \textit{DI}), saitų redaktorius \angl{linker}.
+\FloatBarrier
+\subsubsection{Coroutine requirements}
 
-Išnašų\footnote{Pirma išnaša.} pavyzdžiai\footnote{Antra išnaša.}.
+A function is considered a coroutine if it uses any of the following keywords:
+\begin{itemize}
+    \item co\_await - suspends execution until resumed
+    \item co\_return - complete execution, optionally return a value
+    \item co\_yield - suspend execution and return a value
+\end{itemize}
 
-\subsection{Faktorialo algoritmas}
+However, not all functions can be coroutines. The standard currently prevents constructors, destructors, constexpr functions, vararg functions, functions that return auto or a concept type, and main() from being coroutines \cite{CookCPP}.
 
-\ref{alg:factorial} algoritmas parodo, kaip suskaičiuoti skaičiaus faktorialą.
+% Coroutines can be used to implement asynchronous code, however they require an external runtime. Popular choices\footnote{popularity gauged via github stars for coroutine libraries, as of 2024-12-22} include \textit{cppcoro}\footnote{\url{https://github.com/lewissbaker/cppcoro}}, \textit{concurrentcpp}\footnote{\url{https://github.com/David-Haim/concurrencpp}} and \textit{libcoro}\footnote{\url{https://github.com/jbaldwin/libcoro}}.
 
-\begin{algorithm}
-\caption{Skaičiaus faktorialas}
-\begin{algorithmic}[1] % [1] padaro, kad eilutės būtų sunumeruotos
-\State $N\gets$ skaičius, kurio faktorialą skaičiuojame
-\State $F\gets 1$
-\For{$i := 2$ to $N$}
-    \State $F\gets F \cdot i$
-\EndFor
-\end{algorithmic}
-\label{alg:factorial}
-\end{algorithm}
+\FloatBarrier
+\subsubsection{Coroutine switching latency}
 
-\subsubsection{Punktas}
-\subsubsubsection{Papunktis}
-\subsubsection{Punktas}
-\section{Skyrius}
-\subsection{Poskyris}
-\subsection{Poskyris}
+The switching latency between coroutines (meaning the suspend + resume latency), is quite small, and depending on the CPU, can take < 1ns. This can be leveraged to improve CPU utilization, via interleaving of multiple coroutine frames. Using an interleaved binary search results in almost 3.5x speed improvement over traditional naive 1-by-1 binary search. This is achieved by hinting to the CPUs MMU to prefetch data before performing the search \cite{Nanocoro}.
 
-\sectionnonum{Rezultatai ir išvados}
-Rezultatų ir išvadų dalyje turi būti aiškiai išdėstomi pagrindiniai darbo
-rezultatai (kažkas išanalizuota, kažkas sukurta, kažkas įdiegta) ir pateikiamos
-išvados (daromi nagrinėtų problemų sprendimo metodų palyginimai, teikiamos
-rekomendacijos, akcentuojamos naujovės).
+\FloatBarrier
+\subsubsection{std::generator comparison with Python generators}
 
-\sectionnonum{Išvados}
+When first introduced, C++ coroutines were bare - the STL provides almost no additional
+functionality built on top of the language feature, meaning that all coroutine supporting code
+needed to be written from scratch.
+
+Starting with C++23, the STL included std::generator,
+which allows generating a sequence of elements. The behaviour is very similiar to
+Pythons generators. Implementations of a endless fibonnaci sequence generator written in python and C++ can
+be seen in \cref{fig:endless_fib}
+
+\begin{figure}[!htbp]
+    \begin{minipage}{0.4\textwidth}
+        \centering
+        \pyfile{./source_code/coroutine_python_gen.py}
+    \end{minipage}
+    \begin{minipage}{0.6\textwidth}
+        \centering
+        \cppfile{./source_code/coroutine_gen_fib.cpp}
+    \end{minipage}
+    \caption{Python and C++ fibonnaci generator}
+    \label{fig:endless_fib}
+\end{figure}
+
+% \textbf{FIXME: Butu galima pridet info kaip sukurt resumable/suspendable task'a? bet gali but visai daug kodo}
+
+\FloatBarrier
+\sectionnonum{Results and conclusions}
+
+% Modern C++ continues to evolve in terms of safety, performance, and convenience. The performed Ranges benchmark shows that they have minimal downside, while improving readability. Concepts are shown to decrease compile-times, make it easier to express type requirements, while also making errors more clear for types which don't meet them. Functional-style data-structure additions to the STL reduce the chance of errors due to removing the need to manually implement RAII semantics. Coroutines make it possible to write generator functions, turn callback based code into linear-esque code, while also minimizing latency cost.
+
+% While the language is not perfect, with several points that could be improved, C++ has various initiatives to improve it further, with new proposals and standards leading the charge to a safer, more performant C++.
+
+The findings of this project highlight both the strengths and shortcomings of modern C++. The benchmarks performed using Ranges show that they significantly enhance code clarity while delivering performance on par with traditional approaches. However, certain edge cases, such as potentially unsafe use of filters and the redundant repetition of work in certain views, highlight a few areas where improvements are needed. Concepts offer a much cleaner way to define and enforce type requirements while also making compilation errors more clear for types that don't meet them. They also enhance compile-times when compared to SFINAE, but they still trail behind similar features in other languages like Rust in terms of flexibility and usability. Type-safe additions to the STL simplify resource management and reduce errors by handling RAII semantics automatically, though they sometimes lack the expressiveness of counterparts in other programming languages, such as the match syntax in Rust. Finally, coroutines enable the simplification of asynchronous workflows by allowing users to express code in a more linear way, while removing the need for callback-based generator functions, and exhibiting a very low switching latency. Yet limitations like heap allocation overhead and restrictions on coroutine usage in certain contexts showcase areas where they could use some further work.
+
+While overall, the language is not perfect, C++ remains widely used and in active development. It has a steady influx of proposals aimed at addressing the languages limitations. Constant evolution in the ecosystem ensures that C++ continues to be competitive in this rapidly changing landscape.
+
+% \textbf{FIXME: Nesu tikras - ar verta palikt 'saraso' tipa? nes is esmes result ir conclusion list sutampa}
 \begin{enumerate}[labelindent=0pt]
-    \item Išvadų skyriuje daromi nagrinėtų problemų sprendimo metodų palyginimai, siūlomos
-rekomendacijos, akcentuojamos naujovės.
-    \item Išvados pateikiamos sunumeruoto (gali būti hierarchinis) sąrašo pavidalu.
-    \item Darbo išvados turi atitikti darbo tikslą.
+    \item Ranges improve readability and extensibility, with minimal performance losses
+    \item Concepts make compilation-errors more readable while decreasing compile-times
+    \item STL contains most commonly found type-safe functional style data structures, which increases safety and convenience over manual implementations.
+    \item Coroutines can be used to turn callback based code into linear-looking code, while minimizing latency cost
 \end{enumerate}
+
+% Rezultatų ir išvadų dalyje turi būti aiškiai išdėstomi pagrindiniai darbo
+% rezultatai (kažkas išanalizuota, kažkas sukurta, kažkas įdiegta) ir pateikiamos
+% išvados (daromi nagrinėtų problemų sprendimo metodų palyginimai, teikiamos
+% rekomendacijos, akcentuojamos naujovės).
 
 \printbibliography[heading=bibintoc]  % Šaltinių sąraše nurodoma panaudota
 % literatūra, kitokie šaltiniai. Abėcėlės tvarka išdėstomi darbe panaudotų
@@ -214,40 +561,63 @@ rekomendacijos, akcentuojamos naujovės.
 % šaltinių, kurie nebuvo paminėti tekste (LaTeX tai sutvarko automatiškai).
 
 % \sectionnonum{Sąvokų apibrėžimai}
-\sectionnonum{Santrumpos}
-Sąvokų apibrėžimai ir santrumpų sąrašas sudaromas tada, kai darbo tekste
-vartojami specialūs paaiškinimo reikalaujantys terminai ir rečiau sutinkamos
-santrumpos.
+\sectionnonum{Abbreviations}
+\begin{enumerate}
+    \item SFINAE - Substitution Failure Is Not An Error
+    \item Constexpr - Constant Expression
+    \item STL - Standard Template Library
+    \item RAII - Resource Acquisition Is Initialization
+    \item MMU - Memory Management Unit
+    \item AST - Abstract Syntax Tree
+    \item IR - Intermediate Representation
+\end{enumerate}
+% Sąvokų apibrėžimai ir santrumpų sąrašas sudaromas tada, kai darbo tekste
+% vartojami specialūs paaiškinimo reikalaujantys terminai ir rečiau sutinkamos
+% santrumpos.
 
 % Priedai
 % Prieduose gali būti pateikiama pagalbinė, ypač darbo autoriaus savarankiškai
 % parengta, medžiaga. Savarankiški priedai gali būti pateikiami ir
 % kompaktiniame diske. Priedai taip pat numeruojami ir vadinami. Darbo tekstas
 % su priedais susiejamas nuorodomis.
-\appendix{Neuroninio tinklo struktūra}
+\appendix{Benchmark details}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.5]{img/MLP}
-    \caption{Paveikslėlio pavyzdys}
-    \label{img:mlp}
-\end{figure}
+All source code for benchmarks can be found in this course projects public repository: \url{https://github.com/lynxcs/vu_kursinis}
+
+The benchmarks were performed on machine - Linux 6.12, AMD 5900x, 32GB RAM.
+
+Used compilers in project were:
+\begin{itemize}
+    \item gcc 12.2 - For running benchmarks
+    \item gcc trunk - For verification whether assembly improved - based on 15.0 at time of testing (2024-12-30)
+    \item clang trunk - For verification whether assembly improved - based on 20.0 at time of testing (2024-12-30)
+\end{itemize}
 
 
-\appendix{Eksperimentinio palyginimo rezultatai}
+% \appendix{Neuroninio tinklo struktūra}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[scale=0.5]{img/MLP}
+%     \caption{Paveikslėlio pavyzdys}
+%     \label{img:mlp}
+% \end{figure}
+
+
+% \appendix{Eksperimentinio palyginimo rezultatai}
 
 % tablesgenerator.com - converts calculators (e.g. excel) tables to LaTeX
-\begin{table}[H]\footnotesize
-  \centering
-  \caption{Lentelės pavyzdys}
-  {\begin{tabular}{|l|c|c|} \hline
-    Algoritmas & $\bar{x}$ & $\sigma^{2}$ \\
-    \hline
-    Algoritmas A  & 1.6335    & 0.5584       \\
-    Algoritmas B  & 1.7395    & 0.5647       \\
-    \hline
-  \end{tabular}}
-  \label{tab:table example}
-\end{table}
+% \begin{table}[H]\footnotesize
+%   \centering
+%   \caption{Lentelės pavyzdys}
+%   {\begin{tabular}{|l|c|c|} \hline
+%     Algoritmas & $\bar{x}$ & $\sigma^{2}$ \\
+%     \hline
+%     Algoritmas A  & 1.6335    & 0.5584       \\
+%     Algoritmas B  & 1.7395    & 0.5647       \\
+%     \hline
+%   \end{tabular}}
+%   \label{tab:table example}
+% \end{table}
 
 \end{document}

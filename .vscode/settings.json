@@ -4,17 +4,33 @@
         "pdf"
     ],
     "latex-workshop.view.pdf.viewer": "external",
-    "latex-workshop.view.pdf.external.viewer.command": "zathura",
-    "latex-workshop.view.pdf.external.viewer.args": [
-        "--synctex-editor-command",
-        "code -r -g \"%{input}:%{line}\"",
-        "%PDF%"
-    ],
-    "latex-workshop.view.pdf.external.synctex.command": "zathura",
-    "latex-workshop.view.pdf.external.synctex.args": [
-        "--synctex-forward=%LINE%:0:%TEX%",
-        "%PDF%"
-    ],
+    // "latex-workshop.view.pdf.external.viewer.command": "zathura",
+    // "latex-workshop.view.pdf.external.viewer.args": [
+    //     "--synctex-editor-command",
+    //     "code -r -g \"%{input}:%{line}\"",
+    //     "%PDF%"
+    // ],
+    // "latex-workshop.view.pdf.external.synctex.command": "zathura",
+    // "latex-workshop.view.pdf.external.synctex.args": [
+    //     "--synctex-forward=%LINE%:0:%TEX%",
+    //     "%PDF%"
+    // ],
     "latex-workshop.synctex.afterBuild.enabled": true,
-    "latex-workshop.synctex.indicator": "rectangle"
+    "latex-workshop.synctex.indicator": "rectangle",
+    "latex-workshop.view.pdf.external.viewer.command": "/mnt/c/Users/domas/Utilities/Sioyek/sioyek.exe",
+    "latex-workshop.view.pdf.external.synctex.command": "/mnt/c/Users/domas/Utilities/Sioyek/sioyek.exe",
+    "latex-workshop.view.pdf.external.synctex.args": [
+        "--inverse-search",
+        "\"C:\\Users\\domas\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe\" \"C:\\Users\\domas\\AppData\\Local\\Programs\\Microsoft VS Code\\resources\\app\\out\\cli.js\" --ms-enable-electron-run-as-node -r -g \"%1:%2\"",
+        // "--reuse-instance",
+        "--forward-search-file",
+        "%TEX%",
+        "--forward-search-line",
+        "%LINE%",
+        "%PDF%"
+    ],
+    "files.associations": {
+        "utility": "cpp"
+    },
+    "C_Cpp.intelliSenseEngine": "disabled"
 }

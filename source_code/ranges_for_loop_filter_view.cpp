@@ -6,5 +6,5 @@ void operate(const auto &container, size_t offset, double early_exit) {
         | std::views::filter(is_odd)
         | std::views::transform(transform_number)
         | std::views::take_while([&](auto v){return v != early_exit;});
-    std::ranges::for_each(elem,print);
+    std::ranges::for_each(elems,print);
 }
